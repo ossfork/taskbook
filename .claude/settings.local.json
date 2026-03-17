@@ -40,7 +40,8 @@
       "Bash(tail:*)",
       "Bash(curl:*)",
       "Bash(sleep 3 && docker exec tb-test-pg pg_isready -U taskbook 2>&1)",
-      "Bash(PATH=\"/nix/store/fnx547zysrzbbm2csgqxjc14x0x3p6gq-devenv-profile/bin:$PATH\" cargo test:*)"
+      "Bash(PATH=\"/nix/store/fnx547zysrzbbm2csgqxjc14x0x3p6gq-devenv-profile/bin:$PATH\" cargo test:*)",
+      "Bash(scripts/release.sh 1.3.2)"
     ]
   }
 }
