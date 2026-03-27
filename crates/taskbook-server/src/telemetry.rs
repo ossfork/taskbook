@@ -17,7 +17,9 @@ pub fn init_telemetry() -> PrometheusHandle {
     tracing_subscriber::fmt().with_env_filter(env_filter).init();
 
     PrometheusBuilder::new()
-        .set_buckets(&[0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0])
+        .set_buckets(&[
+            0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0,
+        ])
         .expect("failed to set histogram buckets")
         .install_recorder()
         .expect("failed to install Prometheus recorder")
