@@ -9,13 +9,9 @@ The taskbook server (`tb-server`) provides sync capabilities for accessing your 
 
 ## Quick Start with Docker Compose
 
-The easiest way to run the server is with Docker Compose:
+The easiest way to run the server is with Docker Compose. Download the [`docker-compose.yml`](https://github.com/taskbook-sh/taskbook/blob/master/docker-compose.yml) and run:
 
 ```bash
-# Clone the repository
-git clone https://github.com/taskbook-sh/taskbook.git
-cd taskbook
-
 # Start the server and database
 docker compose up -d
 
@@ -73,11 +69,13 @@ The server automatically runs database migrations on startup.
 
 ## Docker
 
-### Build the Image
+Pre-built multi-arch (`linux/amd64`, `linux/arm64`) images are published to GHCR on every release:
 
 ```bash
-docker build -f Dockerfile.server -t taskbook-server .
+docker pull ghcr.io/taskbook-sh/taskbook-server:latest
 ```
+
+Available tags: `latest`, `1.3.3`, `1.3`, `1` (semver).
 
 ### Run with Docker
 
@@ -89,7 +87,15 @@ docker run -d \
   -e TB_DB_NAME=taskbook \
   -e TB_DB_USER=postgres \
   -e TB_DB_PASSWORD=secret \
-  taskbook-server
+  ghcr.io/taskbook-sh/taskbook-server:latest
+```
+
+### Build from Source
+
+To build the image locally instead:
+
+```bash
+docker build -f Dockerfile.server -t taskbook-server .
 ```
 
 ## docker-compose.yml
@@ -111,9 +117,7 @@ services:
       retries: 5
 
   server:
-    build:
-      context: .
-      dockerfile: Dockerfile.server
+    image: ghcr.io/taskbook-sh/taskbook-server:latest
     environment:
       TB_HOST: "0.0.0.0"
       TB_PORT: "8080"

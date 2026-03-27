@@ -20,6 +20,16 @@ Download the latest binary from [releases](https://github.com/taskbook-sh/taskbo
 cargo install --path crates/taskbook-client
 ```
 
+### Docker (server)
+
+Pre-built images are published to GHCR on every release:
+
+```bash
+docker pull ghcr.io/taskbook-sh/taskbook-server:latest
+```
+
+Or use Docker Compose for a full setup with PostgreSQL — see [Server Setup](docs/server.md).
+
 ### Nix Flake
 
 ```nix
