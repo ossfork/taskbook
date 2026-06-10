@@ -18,6 +18,9 @@ devenv.lock
 # Kubernetes deployment (local only)
 k8s/
 
+# Local taskbook credentials (server token + encryption key)
+/credentials.json
+
 # OS
 .DS_Store
 result
