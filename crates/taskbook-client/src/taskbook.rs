@@ -18,6 +18,7 @@ struct CreateOptions {
     id: u64,
     priority: u8,
     tags: Vec<String>,
+    due_date: Option<i64>,
 }
 
 pub struct Taskbook {
@@ -146,14 +147,20 @@ impl Taskbook {
         let data = self.get_data()?;
         let id = self.generate_id(&data);
 
-        let (boards, description, priority, tags) = board::parse_cli_input(input);
+        let parsed = board::parse_cli_input(input).map_err(|e| match e {
+            board::CliParseError::InvalidDueDate(raw) => {
+                self.render.invalid_due_date();
+                TaskbookError::General(format!("invalid due date: {raw}"))
+            }
+        })?;
 
         Ok(CreateOptions {
-            boards,
-            description,
+            boards: parsed.boards,
+            description: parsed.description,
             id,
-            priority,
-            tags,
+            priority: parsed.priority,
+            tags: parsed.tags,
+            due_date: parsed.due_date,
         })
     }
 
@@ -766,6 +773,7 @@ impl Taskbook {
             id,
             priority,
             tags,
+            due_date,
         } = self.get_options(desc)?;
 
         if description.is_empty() {
@@ -773,7 +781,8 @@ impl Taskbook {
             return Err(TaskbookError::InvalidId(0));
         }
 
-        let task = Task::new_with_tags(id, description, boards, priority, tags);
+        let task = Task::new_with_tags(id, description, boards, priority, tags)
+            .with_due_date(due_date);
         let mut data = self.get_data()?;
         data.insert(id.to_string(), StorageItem::Task(task));
         self.save(&data)?;

@@ -41,24 +41,49 @@ pub fn display_name(board: &str) -> String {
     }
 }
 
-/// Parse CLI input words into (boards, description, priority, tags).
+/// Structured result of parsing CLI create input.
+#[derive(Debug)]
+pub struct ParsedInput {
+    pub boards: Vec<String>,
+    pub description: String,
+    pub priority: u8,
+    pub tags: Vec<String>,
+    /// Due date as local-midnight epoch millis (from a `due:` token).
+    pub due_date: Option<i64>,
+}
+
+/// Errors from parsing CLI create input.
+#[derive(Debug, PartialEq, Eq)]
+pub enum CliParseError {
+    /// The value after `due:` was not a valid date.
+    InvalidDueDate(String),
+}
+
+/// Parse CLI input words into a [`ParsedInput`].
 ///
 /// Words starting with `@` (and longer than 1 char) are treated as board names.
 /// Words starting with `+` (and longer than 1 char) are treated as tags.
 /// Words matching `p:1`, `p:2`, `p:3` set priority.
+/// Words starting with `due:` set the due date (`YYYY-MM-DD`, `today`, `tomorrow`).
 /// Everything else is the description.
 ///
 /// If no boards are found, defaults to [`DEFAULT_BOARD`].
-pub fn parse_cli_input(input: &[String]) -> (Vec<String>, String, u8, Vec<String>) {
+pub fn parse_cli_input(input: &[String]) -> Result<ParsedInput, CliParseError> {
     let mut boards = Vec::new();
     let mut tags = Vec::new();
     let mut desc = Vec::new();
     let mut priority: u8 = 1;
+    let mut due_date: Option<i64> = None;
 
     for word in input {
         if is_priority_opt(word) {
             if let Ok(p) = word.trim_start_matches("p:").parse::<u8>() {
                 priority = p;
+            }
+        } else if let Some(value) = word.strip_prefix("due:") {
+            match crate::due::parse_due_date(value) {
+                Some(millis) => due_date = Some(millis),
+                None => return Err(CliParseError::InvalidDueDate(value.to_string())),
             }
         } else if word.starts_with('@') && word.len() > 1 {
             boards.push(normalize_board_name(word));
@@ -84,7 +109,13 @@ pub fn parse_cli_input(input: &[String]) -> (Vec<String>, String, u8, Vec<String
         }
     }
 
-    (deduped, desc.join(" "), priority, tags)
+    Ok(ParsedInput {
+        boards: deduped,
+        description: desc.join(" "),
+        priority,
+        tags,
+        due_date,
+    })
 }
 
 /// Normalize a raw tag name: strip leading `+`, trim whitespace, lowercase.
@@ -168,54 +199,55 @@ mod tests {
     #[test]
     fn test_parse_cli_input_basic() {
         let input: Vec<String> = vec!["@coding".into(), "Fix".into(), "bug".into()];
-        let (boards, desc, priority, tags) = parse_cli_input(&input);
-        assert_eq!(boards, vec!["coding"]);
-        assert_eq!(desc, "Fix bug");
-        assert_eq!(priority, 1);
-        assert!(tags.is_empty());
+        let parsed = parse_cli_input(&input).unwrap();
+        assert_eq!(parsed.boards, vec!["coding"]);
+        assert_eq!(parsed.description, "Fix bug");
+        assert_eq!(parsed.priority, 1);
+        assert!(parsed.tags.is_empty());
+        assert_eq!(parsed.due_date, None);
     }
 
     #[test]
     fn test_parse_cli_input_with_priority() {
         let input: Vec<String> = vec!["@coding".into(), "Fix".into(), "bug".into(), "p:3".into()];
-        let (boards, desc, priority, _) = parse_cli_input(&input);
-        assert_eq!(boards, vec!["coding"]);
-        assert_eq!(desc, "Fix bug");
-        assert_eq!(priority, 3);
+        let parsed = parse_cli_input(&input).unwrap();
+        assert_eq!(parsed.boards, vec!["coding"]);
+        assert_eq!(parsed.description, "Fix bug");
+        assert_eq!(parsed.priority, 3);
     }
 
     #[test]
     fn test_parse_cli_input_no_board_defaults() {
         let input: Vec<String> = vec!["Simple".into(), "task".into()];
-        let (boards, desc, priority, _) = parse_cli_input(&input);
-        assert_eq!(boards, vec![DEFAULT_BOARD]);
-        assert_eq!(desc, "Simple task");
-        assert_eq!(priority, 1);
+        let parsed = parse_cli_input(&input).unwrap();
+        assert_eq!(parsed.boards, vec![DEFAULT_BOARD]);
+        assert_eq!(parsed.description, "Simple task");
+        assert_eq!(parsed.priority, 1);
     }
 
     #[test]
     fn test_parse_cli_input_dedup_boards() {
         let input: Vec<String> = vec!["@coding".into(), "@Coding".into(), "task".into()];
-        let (boards, desc, _, _) = parse_cli_input(&input);
-        assert_eq!(boards, vec!["coding"]);
-        assert_eq!(desc, "task");
+        let parsed = parse_cli_input(&input).unwrap();
+        assert_eq!(parsed.boards, vec!["coding"]);
+        assert_eq!(parsed.description, "task");
     }
 
     #[test]
     fn test_parse_cli_input_priority_parsing() {
         for p in 1..=3u8 {
             let input: Vec<String> = vec!["task".into(), format!("p:{p}")];
-            let (_, _, priority, _) = parse_cli_input(&input);
-            assert_eq!(priority, p, "expected priority {p}");
+            let parsed = parse_cli_input(&input).unwrap();
+            assert_eq!(parsed.priority, p, "expected priority {p}");
         }
     }
 
     #[test]
     fn test_parse_cli_input_multiple_boards() {
         let input: Vec<String> = vec!["@coding".into(), "@reviews".into(), "task".into()];
-        let (boards, desc, _, _) = parse_cli_input(&input);
-        assert_eq!(boards, vec!["coding", "reviews"]);
-        assert_eq!(desc, "task");
+        let parsed = parse_cli_input(&input).unwrap();
+        assert_eq!(parsed.boards, vec!["coding", "reviews"]);
+        assert_eq!(parsed.description, "task");
     }
 
     #[test]
@@ -228,17 +260,37 @@ mod tests {
             "login".into(),
             "bug".into(),
         ];
-        let (boards, desc, _, tags) = parse_cli_input(&input);
-        assert_eq!(boards, vec!["coding"]);
-        assert_eq!(desc, "Fix login bug");
-        assert_eq!(tags, vec!["urgent", "frontend"]);
+        let parsed = parse_cli_input(&input).unwrap();
+        assert_eq!(parsed.boards, vec!["coding"]);
+        assert_eq!(parsed.description, "Fix login bug");
+        assert_eq!(parsed.tags, vec!["urgent", "frontend"]);
     }
 
     #[test]
     fn test_parse_cli_input_dedup_tags() {
         let input: Vec<String> = vec!["+urgent".into(), "+Urgent".into(), "task".into()];
-        let (_, _, _, tags) = parse_cli_input(&input);
-        assert_eq!(tags, vec!["urgent"]);
+        let parsed = parse_cli_input(&input).unwrap();
+        assert_eq!(parsed.tags, vec!["urgent"]);
+    }
+
+    #[test]
+    fn test_parse_cli_input_with_due_date() {
+        let input: Vec<String> = vec!["Pay".into(), "rent".into(), "due:2026-07-01".into()];
+        let parsed = parse_cli_input(&input).unwrap();
+        assert_eq!(parsed.description, "Pay rent");
+        assert_eq!(
+            parsed.due_date,
+            Some(crate::due::parse_due_date("2026-07-01").unwrap())
+        );
+    }
+
+    #[test]
+    fn test_parse_cli_input_invalid_due_date_errors() {
+        let input: Vec<String> = vec!["task".into(), "due:soon".into()];
+        assert_eq!(
+            parse_cli_input(&input).unwrap_err(),
+            CliParseError::InvalidDueDate("soon".to_string())
+        );
     }
 
     #[test]

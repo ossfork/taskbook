@@ -4,6 +4,7 @@ use colored::{ColoredString, Colorize};
 
 use crate::config::{Config, Rgb, ThemeColors};
 use taskbook_common::board;
+use taskbook_common::due;
 use taskbook_common::StorageItem;
 
 /// Statistics about items
@@ -404,6 +405,13 @@ impl Render {
 
     pub fn invalid_priority(&self) {
         eprintln!("\n {} Priority can only be 1, 2 or 3", self.error("✖"));
+    }
+
+    pub fn invalid_due_date(&self) {
+        eprintln!(
+            "\n {} Invalid due date. Use YYYY-MM-DD, today, tomorrow or none",
+            self.error("✖")
+        );
     }
 
     /// Format IDs as comma-separated string
