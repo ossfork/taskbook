@@ -519,6 +519,22 @@ impl Render {
         );
     }
 
+    pub fn success_due_date(&self, id: u64, due_date: Option<i64>) {
+        match due_date {
+            Some(millis) => println!(
+                "\n {} Set due date of task: {} to {}",
+                self.success("✔"),
+                self.muted(&id.to_string()),
+                self.muted(&due::format_due_date(millis))
+            ),
+            None => println!(
+                "\n {} Cleared due date of task: {}",
+                self.success("✔"),
+                self.muted(&id.to_string())
+            ),
+        }
+    }
+
     pub fn success_restore(&self, ids: &[u64]) {
         self.print_mark_message(ids, "Restored", "item", "items");
     }

@@ -25,6 +25,7 @@ pub fn run(
     begin: bool,
     star: bool,
     priority: bool,
+    due: bool,
     copy: bool,
     timeline: bool,
     find: bool,
@@ -85,6 +86,10 @@ pub fn run(
 
     if priority {
         return taskbook.update_priority(&input);
+    }
+
+    if due {
+        return taskbook.update_due_date(&input);
     }
 
     if copy {

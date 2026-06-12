@@ -28,6 +28,7 @@ const HELP_TEXT: &str = r#"
       --clear            Delete all checked items
       --copy, -y         Copy item description
       --delete, -d       Delete item
+      --due              Set/clear due date of task
       --edit, -e         Edit item description
       --edit-note        Edit note in external editor
       --find, -f         Search for items
@@ -59,6 +60,8 @@ const HELP_TEXT: &str = r#"
       $ tb --clear
       $ tb --copy 1 2 3
       $ tb --delete 4
+      $ tb --due @3 2026-07-01
+      $ tb --due @3 none
       $ tb --edit @3 Merge PR #42
       $ tb --find documentation
       $ tb --list pending coding
@@ -70,6 +73,7 @@ const HELP_TEXT: &str = r#"
       $ tb --task @coding @reviews Review PR #42
       $ tb --task @coding +urgent Improve documentation
       $ tb --task Make some buttercream
+      $ tb --task Pay rent due:2026-07-01
       $ tb --tag @3 +urgent +frontend
       $ tb --tag @3 -urgent
       $ tb --list +urgent
@@ -144,6 +148,10 @@ struct Cli {
     /// Update priority of task
     #[arg(short = 'p', long)]
     priority: bool,
+
+    /// Set or clear due date of task
+    #[arg(long)]
+    due: bool,
 
     /// Restore items from archive
     #[arg(short = 'r', long)]
@@ -282,6 +290,7 @@ fn main() {
         || cli.edit_note
         || cli.r#move
         || cli.priority
+        || cli.due
         || cli.copy
         || cli.find
         || cli.list
@@ -311,6 +320,7 @@ fn main() {
             cli.begin,
             cli.star,
             cli.priority,
+            cli.due,
             cli.copy,
             cli.timeline,
             cli.find,
