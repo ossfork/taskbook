@@ -135,6 +135,24 @@ impl Render {
         }
     }
 
+    fn get_due(&self, item: &StorageItem) -> String {
+        let Some(task) = item.as_task() else {
+            return String::new();
+        };
+        if task.is_complete {
+            return String::new();
+        }
+        let Some(millis) = task.due_date else {
+            return String::new();
+        };
+        let text = format!("due:{}", due::format_due_date(millis));
+        match due::due_status(millis) {
+            due::DueStatus::Overdue => self.error(&text).to_string(),
+            due::DueStatus::DueToday => self.warning(&text).to_string(),
+            due::DueStatus::Upcoming => self.muted(&text).to_string(),
+        }
+    }
+
     fn get_star(&self, item: &StorageItem) -> String {
         if item.is_starred() {
             self.starred("★").to_string()
@@ -213,10 +231,14 @@ impl Render {
         let prefix = self.build_prefix(item);
         let message = self.build_message(item);
         let tags = self.color_tags(item.tags());
+        let due = self.get_due(item);
 
         let mut suffix_parts: Vec<String> = Vec::new();
         if !tags.is_empty() {
             suffix_parts.push(tags);
+        }
+        if !due.is_empty() {
+            suffix_parts.push(due);
         }
         if !age.is_empty() {
             suffix_parts.push(age);
@@ -242,10 +264,14 @@ impl Render {
         let message = self.build_message(item);
         let boards_str = self.color_boards(&boards);
         let tags = self.color_tags(item.tags());
+        let due = self.get_due(item);
 
         let mut suffix_parts: Vec<String> = Vec::new();
         if !tags.is_empty() {
             suffix_parts.push(tags);
+        }
+        if !due.is_empty() {
+            suffix_parts.push(due);
         }
         if !boards_str.is_empty() {
             suffix_parts.push(boards_str);
