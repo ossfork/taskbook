@@ -196,6 +196,7 @@ fn execute_command(app: &mut App, cmd: ParsedCommand) -> Result<()> {
             description,
             priority,
             tags,
+            due_date,
         } => {
             let board_name = board
                 .map(|b| board::normalize_board_name(&b))
@@ -206,6 +207,7 @@ fn execute_command(app: &mut App, cmd: ParsedCommand) -> Result<()> {
                 description,
                 priority,
                 tags,
+                due_date,
             )?;
             app.refresh_items()?;
             let display = board::display_name(&board_name);

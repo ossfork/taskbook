@@ -367,16 +367,17 @@ impl Taskbook {
         description: String,
         priority: u8,
     ) -> Result<u64> {
-        self.create_task_direct_with_tags(boards, description, priority, Vec::new())
+        self.create_task_direct_with_tags(boards, description, priority, Vec::new(), None)
     }
 
-    /// Create a task with tags (for TUI)
+    /// Create a task with tags and optional due date (for TUI/MCP)
     pub fn create_task_direct_with_tags(
         &self,
         boards: Vec<String>,
         description: String,
         priority: u8,
         tags: Vec<String>,
+        due_date: Option<i64>,
     ) -> Result<u64> {
         if description.is_empty() {
             return Err(TaskbookError::General("Description cannot be empty".into()));
@@ -384,7 +385,8 @@ impl Taskbook {
 
         let mut data = self.get_data()?;
         let id = self.generate_id(&data);
-        let task = Task::new_with_tags(id, description, boards, priority, tags);
+        let task =
+            Task::new_with_tags(id, description, boards, priority, tags).with_due_date(due_date);
         data.insert(id.to_string(), StorageItem::Task(task));
         self.save(&data)?;
         Ok(id)

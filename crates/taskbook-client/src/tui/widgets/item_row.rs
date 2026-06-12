@@ -5,6 +5,7 @@ use ratatui::{
 
 use crate::tui::app::App;
 use taskbook_common::board;
+use taskbook_common::due;
 use taskbook_common::StorageItem;
 
 /// Options for rendering an item row
@@ -117,6 +118,23 @@ pub fn render_item_line(
             spans.push(Span::styled(" (!)", app.theme.warning));
         } else if task.priority == 3 {
             spans.push(Span::styled(" (!!)", app.theme.error));
+        }
+    }
+
+    // Due date
+    if let Some(task) = item.as_task() {
+        if !task.is_complete {
+            if let Some(millis) = task.due_date {
+                let style = match due::due_status(millis) {
+                    due::DueStatus::Overdue => app.theme.error,
+                    due::DueStatus::DueToday => app.theme.warning,
+                    due::DueStatus::Upcoming => app.theme.muted,
+                };
+                spans.push(Span::styled(
+                    format!(" due:{}", due::format_due_date(millis)),
+                    style,
+                ));
+            }
         }
     }
 

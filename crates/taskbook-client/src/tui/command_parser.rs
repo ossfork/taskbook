@@ -1,3 +1,5 @@
+use taskbook_common::due;
+
 /// Parsed command from the command line input
 #[derive(Debug, Clone)]
 pub enum ParsedCommand {
@@ -6,6 +8,7 @@ pub enum ParsedCommand {
         description: String,
         priority: u8,
         tags: Vec<String>,
+        due_date: Option<i64>,
     },
     Note {
         board: Option<String>,
@@ -124,7 +127,7 @@ fn parse_task(args: &str) -> Result<ParsedCommand, ParseError> {
     let args = args.trim();
     if args.is_empty() {
         return Err(ParseError {
-            message: "Usage: /task [@board] description [p:1-3]".to_string(),
+            message: "Usage: /task [@board] description [p:1-3] [due:YYYY-MM-DD]".to_string(),
         });
     }
 
@@ -140,12 +143,24 @@ fn parse_task(args: &str) -> Result<ParsedCommand, ParseError> {
     let mut priority = 1u8;
     let mut desc_parts = Vec::new();
     let mut tags = Vec::new();
+    let mut due_date: Option<i64> = None;
 
     for token in rest.split_whitespace() {
         if let Some(p) = token.strip_prefix("p:") {
             if let Ok(v) = p.parse::<u8>() {
                 if (1..=3).contains(&v) {
                     priority = v;
+                }
+            }
+        } else if let Some(value) = token.strip_prefix("due:") {
+            match due::parse_due_date(value) {
+                Some(millis) => due_date = Some(millis),
+                None => {
+                    return Err(ParseError {
+                        message: format!(
+                            "Invalid due date: {value} (use YYYY-MM-DD, today, tomorrow)"
+                        ),
+                    })
                 }
             }
         } else if token.starts_with('+') && token.len() > 1 {
@@ -170,6 +185,7 @@ fn parse_task(args: &str) -> Result<ParsedCommand, ParseError> {
         description,
         priority,
         tags,
+        due_date,
     })
 }
 
@@ -599,6 +615,28 @@ mod tests {
             }
             _ => panic!("Expected RenameBoard"),
         }
+    }
+
+    #[test]
+    fn test_parse_task_with_due_date() {
+        let cmd = parse_command("/task Pay rent due:2026-07-01").unwrap();
+        match cmd {
+            ParsedCommand::Task {
+                due_date,
+                description,
+                ..
+            } => {
+                assert_eq!(description, "Pay rent");
+                assert_eq!(due_date, due::parse_due_date("2026-07-01"));
+            }
+            _ => panic!("expected Task"),
+        }
+    }
+
+    #[test]
+    fn test_parse_task_invalid_due_date_errors() {
+        let err = parse_command("/task Pay rent due:whenever").unwrap_err();
+        assert!(err.message.contains("Invalid due date"));
     }
 
     #[test]
