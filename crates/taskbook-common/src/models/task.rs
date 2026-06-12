@@ -31,6 +31,9 @@ pub struct Task {
 
     pub priority: u8,
 
+    #[serde(rename = "_dueDate", default, skip_serializing_if = "Option::is_none")]
+    pub due_date: Option<i64>,
+
     #[serde(deserialize_with = "board::deserialize_boards")]
     pub boards: Vec<String>,
 
@@ -52,9 +55,16 @@ impl Task {
             is_complete: false,
             in_progress: false,
             priority: priority.clamp(1, 3),
+            due_date: None,
             boards,
             tags: Vec::new(),
         }
+    }
+
+    /// Returns the task with the given due date set (epoch millis).
+    pub fn with_due_date(mut self, due_date: Option<i64>) -> Self {
+        self.due_date = due_date;
+        self
     }
 
     /// Creates a new task with tags.
@@ -126,5 +136,26 @@ mod tests {
 
         let mid = Task::new(3, "Test".to_string(), vec!["My Board".to_string()], 2);
         assert_eq!(mid.priority, 2);
+    }
+
+    #[test]
+    fn test_due_date_serde_round_trip() {
+        let task = Task::new(1, "T".to_string(), vec!["My Board".to_string()], 1)
+            .with_due_date(Some(1_790_000_000_000));
+        let json = serde_json::to_string(&task).unwrap();
+        assert!(json.contains("_dueDate"));
+        let back: Task = serde_json::from_str(&json).unwrap();
+        assert_eq!(back.due_date, Some(1_790_000_000_000));
+    }
+
+    #[test]
+    fn test_task_without_due_date_omits_field_and_deserializes() {
+        let task = Task::new(1, "T".to_string(), vec!["My Board".to_string()], 1);
+        let json = serde_json::to_string(&task).unwrap();
+        assert!(!json.contains("_dueDate"));
+        // Legacy JSON without the field still parses
+        let legacy = r#"{"_id":1,"_date":"Fri Jun 12 2026","_timestamp":1,"_isTask":true,"description":"x","isStarred":false,"isComplete":false,"inProgress":false,"priority":1,"boards":["My Board"]}"#;
+        let back: Task = serde_json::from_str(legacy).unwrap();
+        assert_eq!(back.due_date, None);
     }
 }
