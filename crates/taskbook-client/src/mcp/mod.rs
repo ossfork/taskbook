@@ -154,10 +154,7 @@ mod tests {
         let tb = test_taskbook();
         let resp = request(&tb, json!({"jsonrpc":"2.0","id":1,"method":"tools/list"}));
         let tools = resp["result"]["tools"].as_array().unwrap();
-        let names: Vec<&str> = tools
-            .iter()
-            .map(|t| t["name"].as_str().unwrap())
-            .collect();
+        let names: Vec<&str> = tools.iter().map(|t| t["name"].as_str().unwrap()).collect();
         assert_eq!(
             names,
             vec![

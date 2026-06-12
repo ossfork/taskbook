@@ -117,7 +117,10 @@ pub fn call(taskbook: &Taskbook, params: &Value) -> Result<Value, (i64, String)>
         .get("name")
         .and_then(Value::as_str)
         .ok_or((-32602, "missing tool name".to_string()))?;
-    let args = params.get("arguments").cloned().unwrap_or_else(|| json!({}));
+    let args = params
+        .get("arguments")
+        .cloned()
+        .unwrap_or_else(|| json!({}));
 
     let outcome = match name {
         "list_items" => list_items(taskbook, &args),
@@ -273,7 +276,11 @@ fn list_items(taskbook: &Taskbook, args: &Value) -> Result<Value, String> {
         }
         if let Some(b) = board_filter {
             let normalized = board::normalize_board_name(b);
-            if !item.boards().iter().any(|ib| board::board_eq(ib, &normalized)) {
+            if !item
+                .boards()
+                .iter()
+                .any(|ib| board::board_eq(ib, &normalized))
+            {
                 return false;
             }
         }

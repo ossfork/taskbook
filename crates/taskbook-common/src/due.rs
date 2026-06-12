@@ -43,8 +43,8 @@ pub fn format_due_date(millis: i64) -> String {
 
 /// Classify a due date against the current local date.
 pub fn due_status(due_millis: i64) -> DueStatus {
-    let due = DateTime::from_timestamp_millis(due_millis)
-        .map(|dt| dt.with_timezone(&Local).date_naive());
+    let due =
+        DateTime::from_timestamp_millis(due_millis).map(|dt| dt.with_timezone(&Local).date_naive());
     let today = Local::now().date_naive();
     match due {
         Some(d) if d < today => DueStatus::Overdue,

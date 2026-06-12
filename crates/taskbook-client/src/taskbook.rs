@@ -43,7 +43,8 @@ impl Taskbook {
         Ok(Self { storage, render })
     }
 
-    /// Construct a Taskbook over an explicit storage backend (for MCP/tests).
+    /// Construct a Taskbook over an explicit storage backend (for tests).
+    #[allow(dead_code)]
     pub fn with_storage(storage: Box<dyn StorageBackend>) -> Self {
         Self {
             storage,
@@ -792,8 +793,8 @@ impl Taskbook {
             return Err(TaskbookError::InvalidId(0));
         }
 
-        let task = Task::new_with_tags(id, description, boards, priority, tags)
-            .with_due_date(due_date);
+        let task =
+            Task::new_with_tags(id, description, boards, priority, tags).with_due_date(due_date);
         let mut data = self.get_data()?;
         data.insert(id.to_string(), StorageItem::Task(task));
         self.save(&data)?;
