@@ -11,6 +11,7 @@ mod credentials;
 mod directory;
 mod editor;
 mod error;
+mod mcp;
 mod render;
 mod storage;
 mod taskbook;
@@ -34,6 +35,7 @@ const HELP_TEXT: &str = r#"
       --find, -f         Search for items
       --help, -h         Display help message
       --list, -l         List items by attributes
+      --mcp              Run as MCP stdio server (for Claude Code etc.)
       --move, -m         Move item between boards
       --note, -n         Create note (opens editor if no description)
       --priority, -p     Update priority of task
@@ -181,6 +183,10 @@ struct Cli {
     #[arg(long)]
     cli: bool,
 
+    /// Run as MCP stdio server (for Claude Code and other agents)
+    #[arg(long)]
+    mcp: bool,
+
     // --- Server commands ---
     /// Register a new server account
     #[arg(long)]
@@ -272,6 +278,14 @@ fn main() {
     if cli.migrate {
         if let Err(e) = commands::migrate(cli.taskbook_dir) {
             eprintln!("Error: {}", e);
+            process::exit(1);
+        }
+        return;
+    }
+
+    if cli.mcp {
+        if let Err(e) = mcp::run(cli.taskbook_dir.as_deref()) {
+            eprintln!("MCP server error: {}", e);
             process::exit(1);
         }
         return;
