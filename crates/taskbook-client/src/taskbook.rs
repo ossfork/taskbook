@@ -43,6 +43,14 @@ impl Taskbook {
         Ok(Self { storage, render })
     }
 
+    /// Construct a Taskbook over an explicit storage backend (for MCP/tests).
+    pub fn with_storage(storage: Box<dyn StorageBackend>) -> Self {
+        Self {
+            storage,
+            render: Render::new(Config::default()),
+        }
+    }
+
     fn get_data(&self) -> Result<HashMap<String, StorageItem>> {
         self.storage.get()
     }
@@ -1205,6 +1213,53 @@ impl Taskbook {
         self.set_due_date_silent(id, due_date)?;
         self.render.success_due_date(id, due_date);
         Ok(())
+    }
+
+    /// Set a task's state deterministically without CLI output (for MCP)
+    pub fn set_task_state_silent(&self, id: u64, state: &str) -> Result<()> {
+        let mut data = self.get_data()?;
+        let existing_ids = self.get_ids(&data);
+        self.validate_ids_silent(&[id], &existing_ids)?;
+
+        if let Some(item) = data.get_mut(&id.to_string()) {
+            let task = item
+                .as_task_mut()
+                .ok_or_else(|| TaskbookError::General(format!("item {id} is not a task")))?;
+            match state {
+                "done" => {
+                    task.is_complete = true;
+                    task.in_progress = false;
+                }
+                "in_progress" => {
+                    task.is_complete = false;
+                    task.in_progress = true;
+                }
+                "pending" => {
+                    task.is_complete = false;
+                    task.in_progress = false;
+                }
+                other => {
+                    return Err(TaskbookError::General(format!(
+                        "invalid state '{other}' (use pending, in_progress or done)"
+                    )))
+                }
+            }
+        }
+
+        self.save(&data)
+    }
+
+    /// Set starred flag explicitly without CLI output (for MCP)
+    pub fn set_starred_silent(&self, id: u64, starred: bool) -> Result<()> {
+        let mut data = self.get_data()?;
+        let existing_ids = self.get_ids(&data);
+        self.validate_ids_silent(&[id], &existing_ids)?;
+
+        if let Some(item) = data.get_mut(&id.to_string()) {
+            item.set_starred(starred);
+        }
+
+        self.save(&data)
     }
 
     /// Set or clear a task due date without CLI output (for TUI/MCP)
