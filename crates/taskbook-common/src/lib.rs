@@ -1,5 +1,6 @@
 pub mod api;
 pub mod board;
+pub mod due;
 pub mod encryption;
 pub mod error;
 pub mod models;
