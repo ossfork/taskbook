@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
+use std::ffi::OsStr;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use crate::error::Result;
 use crate::tui::ViewMode;
@@ -266,17 +267,57 @@ impl Default for Config {
 }
 
 impl Config {
-    /// Get the config file path (~/.taskbook.json)
-    fn config_file_path() -> PathBuf {
-        dirs::home_dir()
-            .expect("Could not find home directory")
-            .join(".taskbook.json")
+    /// Resolve the config file path.
+    ///
+    /// Prefers the XDG location `~/.config/taskbook/taskbook.json` (honoring
+    /// `$XDG_CONFIG_HOME`). Falls back to the legacy `~/.taskbook.json` when it
+    /// exists and the XDG file does not, so existing installs keep working.
+    /// New installs use the XDG location.
+    pub fn config_file_path() -> PathBuf {
+        let home = dirs::home_dir().expect("Could not find home directory");
+        let xdg = Self::xdg_config_path(&home, std::env::var_os("XDG_CONFIG_HOME").as_deref());
+        let legacy = Self::legacy_config_path(&home);
+        Self::select_config_path(xdg, legacy)
     }
 
-    /// Ensure the config file exists, creating it with defaults if not
+    /// XDG config path: `$XDG_CONFIG_HOME/taskbook/taskbook.json`, or
+    /// `~/.config/taskbook/taskbook.json` when the env var is unset/empty.
+    ///
+    /// `~/.config` is used on every platform (not the OS-native config dir) to
+    /// match the conventional Linux location users expect.
+    fn xdg_config_path(home: &Path, xdg_env: Option<&OsStr>) -> PathBuf {
+        let base = match xdg_env.filter(|v| !v.is_empty()) {
+            Some(v) => PathBuf::from(v),
+            None => home.join(".config"),
+        };
+        base.join("taskbook").join("taskbook.json")
+    }
+
+    /// Legacy pre-XDG config path: `~/.taskbook.json`.
+    fn legacy_config_path(home: &Path) -> PathBuf {
+        home.join(".taskbook.json")
+    }
+
+    /// Choose between the XDG and legacy paths: prefer XDG, fall back to an
+    /// existing legacy file, otherwise default to XDG for new installs.
+    fn select_config_path(xdg: PathBuf, legacy: PathBuf) -> PathBuf {
+        if xdg.exists() {
+            xdg
+        } else if legacy.exists() {
+            legacy
+        } else {
+            xdg
+        }
+    }
+
+    /// Ensure the config file (and any parent directory) exists, creating it
+    /// with defaults if not.
     fn ensure_config_file() -> Result<()> {
         let config_path = Self::config_file_path();
         if !config_path.exists() {
+            if let Some(parent) = config_path.parent() {
+                fs::create_dir_all(parent)?;
+            }
             let default_config = Config::default();
             let data = serde_json::to_string_pretty(&default_config)?;
             fs::write(&config_path, data)?;
@@ -337,6 +378,9 @@ impl Config {
     /// Save the configuration to file
     pub fn save(&self) -> Result<()> {
         let config_path = Self::config_file_path();
+        if let Some(parent) = config_path.parent() {
+            fs::create_dir_all(parent)?;
+        }
         let data = serde_json::to_string_pretty(self)?;
         fs::write(&config_path, data)?;
         Ok(())
@@ -387,5 +431,68 @@ mod tests {
         }"#;
         let config: Config = serde_json::from_str(json).unwrap();
         assert_eq!(config.default_view, ViewMode::Board);
+    }
+
+    #[test]
+    fn xdg_path_defaults_to_dot_config() {
+        let home = Path::new("/home/alice");
+        assert_eq!(
+            Config::xdg_config_path(home, None),
+            PathBuf::from("/home/alice/.config/taskbook/taskbook.json")
+        );
+    }
+
+    #[test]
+    fn xdg_path_honors_env_var() {
+        let home = Path::new("/home/alice");
+        assert_eq!(
+            Config::xdg_config_path(home, Some(OsStr::new("/custom/xdg"))),
+            PathBuf::from("/custom/xdg/taskbook/taskbook.json")
+        );
+    }
+
+    #[test]
+    fn xdg_path_ignores_empty_env_var() {
+        let home = Path::new("/home/alice");
+        assert_eq!(
+            Config::xdg_config_path(home, Some(OsStr::new(""))),
+            PathBuf::from("/home/alice/.config/taskbook/taskbook.json")
+        );
+    }
+
+    #[test]
+    fn legacy_path_is_dot_taskbook_json() {
+        let home = Path::new("/home/alice");
+        assert_eq!(
+            Config::legacy_config_path(home),
+            PathBuf::from("/home/alice/.taskbook.json")
+        );
+    }
+
+    #[test]
+    fn select_config_path_resolution() {
+        let dir = std::env::temp_dir().join(format!("tb_cfg_select_{}", std::process::id()));
+        fs::create_dir_all(&dir).unwrap();
+        let xdg = dir.join("xdg.json");
+        let legacy = dir.join("legacy.json");
+        fs::write(&xdg, "{}").unwrap();
+        fs::write(&legacy, "{}").unwrap();
+        let missing_xdg = dir.join("missing_xdg.json");
+        let missing_legacy = dir.join("missing_legacy.json");
+
+        // XDG present wins, even when legacy also exists.
+        assert_eq!(Config::select_config_path(xdg.clone(), legacy.clone()), xdg);
+        // XDG absent but legacy present -> legacy (existing installs keep working).
+        assert_eq!(
+            Config::select_config_path(missing_xdg.clone(), legacy.clone()),
+            legacy
+        );
+        // Neither present -> XDG location for new installs.
+        assert_eq!(
+            Config::select_config_path(missing_xdg.clone(), missing_legacy),
+            missing_xdg
+        );
+
+        fs::remove_dir_all(&dir).unwrap();
     }
 }

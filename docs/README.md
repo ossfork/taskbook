@@ -59,7 +59,7 @@ tb --begin 2
 └── archive/
     └── archive.json      # Archived items
 
-~/.taskbook.json          # Configuration file
+~/.config/taskbook/taskbook.json  # Configuration file (legacy: ~/.taskbook.json)
 ~/.taskbook/credentials.json  # Server credentials (when using sync)
 ```
 
