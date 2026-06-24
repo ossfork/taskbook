@@ -63,6 +63,7 @@ const HELP_TEXT: &str = r#"
       $ tb --copy 1 2 3
       $ tb --delete 4
       $ tb --due @3 2026-07-01
+      $ tb --due @3 "2026-07-01 14:30"
       $ tb --due @3 none
       $ tb --edit @3 Merge PR #42
       $ tb --find documentation
@@ -76,6 +77,7 @@ const HELP_TEXT: &str = r#"
       $ tb --task @coding +urgent Improve documentation
       $ tb --task Make some buttercream
       $ tb --task Pay rent due:2026-07-01
+      $ tb --task Call dentist due:tomorrow+0930
       $ tb --tag @3 +urgent +frontend
       $ tb --tag @3 -urgent
       $ tb --list +urgent

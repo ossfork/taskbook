@@ -64,7 +64,9 @@ pub enum CliParseError {
 /// Words starting with `@` (and longer than 1 char) are treated as board names.
 /// Words starting with `+` (and longer than 1 char) are treated as tags.
 /// Words matching `p:1`, `p:2`, `p:3` set priority.
-/// Words starting with `due:` set the due date (`YYYY-MM-DD`, `today`, `tomorrow`).
+/// Words starting with `due:` set the due date (`YYYY-MM-DD`, `YYYY-MM-DDTHH:MM`,
+/// `today`, `tomorrow`, `now`, or `today+HHMM` / `tomorrow+HHMM` / `now+HHMM`).
+/// (A `due:` token cannot contain a space, so use the `T` separator for a time.)
 /// Everything else is the description.
 ///
 /// If no boards are found, defaults to [`DEFAULT_BOARD`].
@@ -281,6 +283,18 @@ mod tests {
         assert_eq!(
             parsed.due_date,
             Some(crate::due::parse_due_date("2026-07-01").unwrap())
+        );
+    }
+
+    #[test]
+    fn test_parse_cli_input_with_due_date_and_time() {
+        // A `due:` token carries a time via the `T` separator (no spaces).
+        let input: Vec<String> = vec!["Call".into(), "vet".into(), "due:2026-07-01T14:30".into()];
+        let parsed = parse_cli_input(&input).unwrap();
+        assert_eq!(parsed.description, "Call vet");
+        assert_eq!(
+            parsed.due_date,
+            Some(crate::due::parse_due_date("2026-07-01T14:30").unwrap())
         );
     }
 

@@ -131,6 +131,7 @@ tb --task "Description"     # Create task
 tb --task @board "Desc"     # Create task in specific board
 tb --task "Desc" p:2        # Create with priority (1=normal, 2=medium, 3=high)
 tb --task "Desc" due:2026-07-01  # Create with due date (also due:today, due:tomorrow)
+tb --task "Desc" due:tomorrow+0930  # Due with time via token: today/tomorrow/now+HHMM or YYYY-MM-DDTHH:MM (no spaces)
 tb --note "Description"     # Create note
 tb --note                   # Create note in external editor ($EDITOR)
 tb --check <id> [id...]     # Toggle task complete
@@ -142,7 +143,7 @@ tb --edit @<id> "New desc"  # Edit description
 tb --edit-note @<id>        # Edit note in external editor ($EDITOR)
 tb --move @<id> board       # Move to board
 tb --priority @<id> <1-3>   # Set priority
-tb --due @<id> <date>       # Set due date (YYYY-MM-DD, today, tomorrow) or none to clear
+tb --due @<id> <date>       # Set due date (YYYY-MM-DD[ HH:MM], today, tomorrow, now, *+HHMM) or none to clear
 tb --find <term>            # Search items
 tb --list <attributes>      # Filter (pending, done, task, note, starred)
 tb --timeline               # Chronological view
