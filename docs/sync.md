@@ -233,7 +233,7 @@ This is by design - the server cannot decrypt your data without your key.
 
 ## Disabling Sync Temporarily
 
-To work locally without syncing, edit `~/.taskbook.json`:
+To work locally without syncing, edit `~/.config/taskbook/taskbook.json` (or the legacy `~/.taskbook.json` if you still use it):
 
 ```json
 {

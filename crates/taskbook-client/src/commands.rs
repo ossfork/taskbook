@@ -192,7 +192,11 @@ pub fn migrate(taskbook_dir: Option<PathBuf>) -> Result<()> {
     );
     println!(
         "{}",
-        "To enable sync, set sync.enabled = true in ~/.taskbook.json".dimmed()
+        format!(
+            "To enable sync, set sync.enabled = true in {}",
+            crate::config::Config::config_file_path().display()
+        )
+        .dimmed()
     );
 
     Ok(())

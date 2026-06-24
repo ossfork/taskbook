@@ -126,7 +126,7 @@ See [Server Setup](docs/server.md) for running your own server.
 
 ## Configuration
 
-Configuration is stored in `~/.taskbook.json`:
+Configuration is stored in `~/.config/taskbook/taskbook.json` (honoring `$XDG_CONFIG_HOME`; a legacy `~/.taskbook.json` is still used if present):
 
 ```json
 {

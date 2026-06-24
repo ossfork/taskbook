@@ -61,7 +61,7 @@ crates/
 │       ├── api_client.rs   # HTTP client for server communication
 │       ├── auth.rs         # Register, login, logout, status commands
 │       ├── credentials.rs  # Encryption key and token management
-│       ├── config.rs       # ~/.taskbook.json configuration (with sync section)
+│       ├── config.rs       # config file (XDG path, with sync section)
 │       ├── directory.rs    # Taskbook directory resolution
 │       ├── render.rs       # Terminal output with colored formatting
 │       ├── editor.rs       # External editor support for notes
@@ -110,8 +110,12 @@ crates/
 5. **Directory Resolution Priority**:
    - `--taskbook-dir` CLI flag (highest)
    - `TASKBOOK_DIR` environment variable
-   - `~/.taskbook.json` config file
+   - config file (lowest)
    - Default `~/.taskbook/` (lowest)
+
+   The config file is resolved as `~/.config/taskbook/taskbook.json`
+   (honoring `$XDG_CONFIG_HOME`), falling back to the legacy
+   `~/.taskbook.json` when it exists and the XDG file does not.
 
 6. **Storage Structure (Local)**:
    ```
@@ -167,7 +171,8 @@ tb --mcp                    # Run as MCP stdio server
 `tb --mcp` runs a Model Context Protocol server over stdio (newline-delimited
 JSON-RPC 2.0, no extra dependencies). It uses the configured storage backend:
 the remote server storage (with client-side encryption) when `sync.enabled =
-true` in `~/.taskbook.json`, local files otherwise.
+true` in the config file (`~/.config/taskbook/taskbook.json`), local files
+otherwise.
 
 Register it in Claude Code:
 

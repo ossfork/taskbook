@@ -1,6 +1,8 @@
 # Configuration
 
-Client configuration is stored in `~/.taskbook.json`. The file is created automatically with default values on first run.
+Client configuration is stored in `~/.config/taskbook/taskbook.json` (honoring `$XDG_CONFIG_HOME`). The file is created automatically with default values on first run.
+
+For backward compatibility, if a legacy `~/.taskbook.json` exists and the XDG file does not, the legacy file is used. To migrate, move `~/.taskbook.json` to `~/.config/taskbook/taskbook.json`.
 
 ## Configuration File
 
