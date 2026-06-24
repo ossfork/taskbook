@@ -127,7 +127,8 @@ fn parse_task(args: &str) -> Result<ParsedCommand, ParseError> {
     let args = args.trim();
     if args.is_empty() {
         return Err(ParseError {
-            message: "Usage: /task [@board] description [p:1-3] [due:YYYY-MM-DD]".to_string(),
+            message: "Usage: /task [@board] description [p:1-3] [due:YYYY-MM-DD[THH:MM]]"
+                .to_string(),
         });
     }
 

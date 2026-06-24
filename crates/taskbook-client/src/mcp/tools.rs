@@ -37,7 +37,7 @@ pub fn definitions() -> Value {
                     "boards": { "type": "array", "items": { "type": "string" }, "description": "Boards to place the task on (defaults to My Board)" },
                     "priority": { "type": "integer", "minimum": 1, "maximum": 3, "description": "1 = normal, 2 = medium, 3 = high (default 1)" },
                     "tags": { "type": "array", "items": { "type": "string" }, "description": "Tags for the task" },
-                    "due_date": { "type": "string", "description": "Due date: YYYY-MM-DD, today, or tomorrow" }
+                    "due_date": { "type": "string", "description": "Due date: YYYY-MM-DD, 'YYYY-MM-DD HH:MM', today, tomorrow, now, or today+HHMM / tomorrow+HHMM / now+HHMM" }
                 },
                 "required": ["description"]
             }
@@ -76,7 +76,7 @@ pub fn definitions() -> Value {
                     "id": { "type": "integer", "description": "Item id" },
                     "description": { "type": "string", "description": "New description" },
                     "priority": { "type": "integer", "minimum": 1, "maximum": 3, "description": "New priority (tasks only)" },
-                    "due_date": { "type": "string", "description": "New due date (YYYY-MM-DD, today, tomorrow) or 'none' to clear (tasks only)" },
+                    "due_date": { "type": "string", "description": "New due date (YYYY-MM-DD, 'YYYY-MM-DD HH:MM', today, tomorrow, now, today+HHMM / tomorrow+HHMM / now+HHMM) or 'none' to clear (tasks only)" },
                     "boards": { "type": "array", "items": { "type": "string" }, "description": "Replace the item's boards" },
                     "tags": { "type": "array", "items": { "type": "string" }, "description": "Replace the item's tags" },
                     "starred": { "type": "boolean", "description": "Star or unstar the item" }
